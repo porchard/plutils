@@ -1,0 +1,19 @@
+#!/usr/bin/env python
+
+import csv
+import argparse
+from plutils.general import open_maybe_gzipped
+
+parser = argparse.ArgumentParser('')
+parser.add_argument('field_names', help='Comma separated.')
+parser.add_argument('file')
+args = parser.parse_args()
+
+fields = args.field_names.split(',')
+print('\t'.join(fields))
+
+with open_maybe_gzipped(args.file) as fh:
+    reader = csv.DictReader(fh, delimiter='\t')
+    for line in reader:
+        print('\t'.join([line[i] for i in fields]))
+

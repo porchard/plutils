@@ -1,0 +1,20 @@
+#!/usr/bin/env python
+
+import argparse
+from plutils.general import open_maybe_gzipped
+
+parser = argparse.ArgumentParser('Count the number of times each line appears in a file.')
+parser.add_argument('infile')
+args = parser.parse_args()
+
+counts = {}
+
+with open_maybe_gzipped(args.infile) as f:
+    for line in f:
+        line = line.rstrip()
+        if line not in counts:
+            counts[line] = 0
+        counts[line] += 1
+
+for line, count in counts.items():
+    print('{}\t{}'.format(count, line))

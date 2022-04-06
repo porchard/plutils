@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+import sys
+import pandas as pd
+import argparse
+
+parser = argparse.ArgumentParser(description='Pivot a table.', add_help=True)
+parser.add_argument('--file', required=True, help='File to pivot.')
+parser.add_argument('--index', nargs='+', help='Index column(s)')
+parser.add_argument('--columns', required=True, help='Column that will become new column names.')
+parser.add_argument('--values', required=True, help='Column that will become new values.')
+args = parser.parse_args()
+
+pd.read_csv(args.file, sep='\t', dtype=str).pivot(index=args.index, columns=args.columns, values=args.values).reset_index().to_csv(sys.stdout, sep='\t', index=False)
