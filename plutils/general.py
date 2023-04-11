@@ -6,6 +6,8 @@ import pandas as pd
 import pyarrow.parquet
 import re
 import gzip
+import subprocess
+import tempfile
 
 
 def open_maybe_gzipped(filename):
@@ -107,6 +109,62 @@ def list_parquet_rows(f):
     columns = list_parquet_columns(f)
     tmp = pd.read_parquet(f, columns=[columns[0]])
     return tmp.index.to_list()
+
+
+def read_vcf_header(f):
+    header = subprocess.run(['bcftools', 'view', '--header-only', f], capture_output=True, check=True).stdout.decode().split('\n')
+    if header[-1] == '':
+        header = header[:-1]
+    return header
+
+
+def parse_region(s):
+    chrom, start, end = re.match('^(.*)[-:_](\d+)[-:_](\d+)$', s).groups()
+    start, end = int(start), int(end)
+    return (chrom, start, end)
+
+
+def tabix(f, region, read_header=True):
+    """
+    f: file to tabix
+    region: region, or list of regions, in format chr:start-end (can use :,-,_ as separators)
+    read_header: use the last header line prefixed with '#' as column names in the returned dataframe
+    """
+    if not isinstance(region, list) and not isinstance(region, str):
+        raise TypeError('region must be a list or a str')
+    if not isinstance(f, str):
+        raise TypeError('f must be a str (path to a file)')
+    if not isinstance(read_header, bool):
+        raise TypeError('read_header must be a bool')
+    if isinstance(region, list):
+        regions = []
+        for r in region:
+            chrom, start, end = parse_region(r)
+            start, end = str(start), str(end)
+            regions.append([chrom, start, end])
+        with tempfile.NamedTemporaryFile() as tmpf:
+            pd.DataFrame(regions).to_csv(tmpf.name, sep='\t', index=False, header=False)
+            sp = subprocess.run(['tabix', '--regions', tmpf.name, f], capture_output=True, check=True)
+    else:
+        chrom, start, end = parse_region(region)
+        sp = subprocess.run(['tabix', f, f'{chrom}:{start}-{end}'], capture_output=True, check=True)
+    txt = sp.stdout.decode().split('\n')
+    if txt[-1] == '':
+        txt = txt[:-1]
+    
+    if len(txt) == 0:
+        return None
+
+    header = None
+    if read_header:
+        with gzip.open(f, 'rt') as fh:
+            for line in fh:
+                if line.startswith('#'):
+                    header = line.lstrip('#').rstrip().split('\t')
+                else:
+                    break
+    
+    return pd.DataFrame([i.split('\t') for i in txt], columns=header)
 
 
 def parse_ensembl_id(x):
