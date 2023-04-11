@@ -204,6 +204,53 @@ def manhattan_plot(chrom, pos, stat, chrom_sizes, chrom_order, ax=None):
         return ax
 
 
+def locuszoom_scatter(df: pd.DataFrame, lead: str, ax: mpl.axes.Axes=None):
+    """
+    Plot the scatterplot component of a locuszoom plot.
+    df must have columns ['-log10(p)', 'pos', 'r2']
+    """
+    for i in ['-log10(p)', 'pos', 'r2']:
+        assert(i in df.columns)
+
+    # LocusZoom colors
+    # from: https://github.com/broadinstitute/pyqtl/blob/master/qtl/locusplot.py
+    lz_colors = ["#7F7F7F", "#282973", "#8CCCF0", "#69BD45", "#F9A41A", "#ED1F24"]
+    select_args = {'marker':'D', 'color':"#714A9D", 'edgecolor':'k', 'lw':0.25}
+    cmap = mpl.colors.ListedColormap(lz_colors)
+    bounds = np.append(-1, np.arange(0,1.2,0.2))
+    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+
+    if ax is None:
+        new_ax = True
+        fig, ax = plt.subplots()
+    else:
+        new_ax = False
+
+    sns.scatterplot(x='pos', y='-log10(p)', ax=ax, hue='r2', data=df.sort_values('r2'), alpha=0.3, palette=cmap, hue_norm=norm, legend=False)
+    sns.scatterplot(x='pos', y='-log10(p)', ax=ax, data=df[df.snp==lead], legend=False, **select_args)
+    #XLIMS = [df.pos.min(), df.pos.max()]
+    #ax.set_xlim(XLIMS)
+    ax.xaxis.set_major_formatter(pos_formatter)
+    ax.set_xlabel('Position')
+    ax.set_ylabel(f'-log10(p)')
+
+    if new_ax:
+        return (fig, ax)
+    else:
+        return ax
+
+
+def add_locuszoom_colorbar(fig):
+    # LocusZoom colors
+    # from: https://github.com/broadinstitute/pyqtl/blob/master/qtl/locusplot.py
+    lz_colors = ["#7F7F7F", "#282973", "#8CCCF0", "#69BD45", "#F9A41A", "#ED1F24"]
+    cmap = mpl.colors.ListedColormap(lz_colors)
+    bounds = np.append(-1, np.arange(0,1.2,0.2))
+    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), orientation='horizontal', label="$r^2$")
+
+
+
 def rotate_xticklabels(ax, rot=45, ha='right'):
     for t in ax.get_xticklabels():
         t.set(rotation=rot, ha=ha)
