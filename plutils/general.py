@@ -36,15 +36,29 @@ def open_maybe_gzipped(filename):
         return f
 
 
-def bin_with_names(x, bin_edges, bin_edge_names, stat_name='x'):
+def count_lines(f, read_cmd=None):
+    if read_cmd is None:
+        return int(subprocess.run(['wc', '-l', f], capture_output=True, check=True).stdout.decode().split()[0])
+    else:
+        strm = subprocess.run([read_cmd, f], capture_output=True, check=True)
+        return int(subprocess.run(['wc', '-l'], input=strm.stdout, capture_output=True).stdout.decode())
+
+
+def bin_with_names(x, bin_edges, bin_edge_names=None, stat_name='x'):
     assert(len(bin_edges) == len(bin_edge_names))
-    xbin = np.digitize(x, bin_edges)
+    if bin_edge_names is None:
+        bin_edge_names = [str(i) for i in bin_edges]
+    bin_to_bin_name = dict(zip(bin_edges, bin_edge_names))
+    bin_edges_sorted = list(sorted(bin_edges))
+    bin_edge_names_sorted = [bin_to_bin_name[i] for i in bin_edges_sorted]
+
+    xbin = np.digitize(x, bin_edges_sorted)
 
     bins_to_bin_names = []
-    bins_to_bin_names.append('{} < {}'.format(stat_name, bin_edge_names[0]))
-    for i in range(len(bin_edges) - 1):
-        bins_to_bin_names.append('{} <= {} < {}'.format(bin_edge_names[i], stat_name, bin_edge_names[i+1]))
-    bins_to_bin_names.append('{} >= {}'.format(stat_name, bin_edge_names[-1]))
+    bins_to_bin_names.append('{} < {}'.format(stat_name, bin_edge_names_sorted[0]))
+    for i in range(len(bin_edges_sorted) - 1):
+        bins_to_bin_names.append('{} <= {} < {}'.format(bin_edge_names_sorted[i], stat_name, bin_edge_names_sorted[i+1]))
+    bins_to_bin_names.append('{} >= {}'.format(stat_name, bin_edge_names_sorted[-1]))
 
     xbin = [bins_to_bin_names[x] for x in xbin]
     xbin = pd.Categorical(xbin, categories=bins_to_bin_names, ordered=True)
