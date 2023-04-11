@@ -31,6 +31,8 @@ if args.verbose:
 with open_maybe_gzipped(args.file_to_filter) as f:
     for line in f:
         line = line.rstrip().split('\t')
+        if len(line) < args.filter_on_index:
+            raise ValueError('filter_on_index is beyond the end of the line (line {}: {})'.format(keep_count + drop_count + 1, '\t'.join(line)))
         if line[args.filter_on_index - 1] in keep:
             print('\t'.join(line))
             keep_count += 1
