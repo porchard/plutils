@@ -21,5 +21,7 @@ setup(
         'matplotlib',
         'seaborn',
         'pyarrow',
+        'pysam',
+        'pybedtools',
         'sklearn']
 )
