@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from . import stats
 import seaborn as sns
 
@@ -244,3 +245,13 @@ def append_n(x):
         tmp = pd.Series(tmp)
         tmp.index = x.index
     return tmp
+
+
+def add_legend_from_colors(d, ax, loc='best', marker='o'):
+    """
+    Given a dictionary from label --> color and a matplotlib ax,
+    add a legend to the ax
+    """
+    legend_elements = [Line2D([0], [0], marker=marker, color=color, label=label) for label, color in d.items()]
+    ax.legend(handles=legend_elements, loc=loc)
+    return ax
